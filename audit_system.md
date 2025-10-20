@@ -35,7 +35,7 @@ sudo nethogs -t -C -d 1 -c 10
 
 # 8.présence et statut de certains services clés 
 ```
-systemctl --no-pager --type=service --all | grep -E 'sshd|cron|crond|cronie|docker|containerd|NetworkManager|systemd-networkd|systemd-resolved|chronyd|systemd-timesyncd|rsyslog|systemd-journald|firewalld|ufw|cups|nginx|apache2|httpd|mariadb|mysqld|postgresql'
+systemctl --no-pager --type=service --all | grep -E 'sshd|cron|docker|NetworkManager|systemd-networkd|rsyslog|systemd-journald|firewalld|ufw|nginx|apache2|httpd|mariadb|mysqld|postgresql'
 
 ```
 
