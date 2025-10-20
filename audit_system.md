@@ -5,7 +5,7 @@ neofetch --stdout | grep -P '^\s*\w+@(.+)$|^OS:|^Kernel:'
 # 2. uptime, charge moyenne, mémoire et swap disponibles et utilisés
 ```
 uptime
-free -h
+free -h | awk '{print $1, $2, $3}'
 ```
 # 3. liste des interfaces réseau : adresses MAC et IP associées
 affiche MAC, IPv4, IPv6
