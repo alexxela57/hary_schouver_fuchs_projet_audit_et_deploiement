@@ -30,7 +30,7 @@ ps -eo pid,user,comm,%cpu,%mem --sort=-%cpu | awk '$4+0 > 5.0 &&  $5+0 > 5.0'
 ```
 # 7. processus les plus consommateurs de trafic réseau
 ```
-
+sudo nethogs -t -C -d 1 -c 10
 ```
 
 # 8.présence et statut de certains services clés 
