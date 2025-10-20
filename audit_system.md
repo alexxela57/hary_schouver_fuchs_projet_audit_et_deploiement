@@ -14,7 +14,11 @@ affiche MAC, IPv4, IPv6
 ip a | grep -E "link|inet"
 ```
 4.
-5.
+# 5. espace disque par partition (disponible, utilisé)
+df pour afficher les partitions et -h pour afficher en Go
+```
+df -h
+```
 6.
 7.
 
