@@ -11,7 +11,7 @@ free -h
 # 3. liste des interfaces réseau : adresses MAC et IP associées
 affiche MAC, IPv4, IPv6
 ```
-ip a | grep -E "(link|inet)"
+ip -br -c addr | grep -Ev '^(lo|docker0|br-|veth|tailscale0|virbr|wg|tun|tap)'
 ```
 # 4. liste des utilisateurs humain existants, en distinguant ceux actuellement connectés
 ```
