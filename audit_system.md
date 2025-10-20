@@ -1,7 +1,6 @@
 # 1. nom de la machine, distribution, version du noyau
 ```
-hostname
-neofetch | grep -E "OS|Kernel"
+neofetch --stdout | grep -P '^\s*\w+@(.+)$|^OS:|^Kernel:'
 ```
 # 2. uptime, charge moyenne, mémoire et swap disponibles et utilisés
 ```
