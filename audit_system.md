@@ -15,7 +15,7 @@ ip a | grep -E "(link|inet)"
 ```
 # 4. liste des utilisateurs humain existants, en distinguant ceux actuellement connectés
 ```
-grep -E ':[1-9][0-9]{3,}:' /etc/passwd | cut -d: -f1 
+grep -E '^[^:]*:[^:]*:[1-9][0-9]{3,}:' /etc/passwd | cut -d: -f1 
 users | grep "$u"
 ```
 # 5. espace disque par partition (disponible, utilisé)
