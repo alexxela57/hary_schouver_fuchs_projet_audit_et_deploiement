@@ -2,11 +2,9 @@
 # encoding: UTF-8
 require 'open3'
 
-cmd = %w[sudo nethogs -t -C -d 1 -c 10]
+cmd = %w[nethogs -t -C -d 1 -c 10]   # <- supprimé 'sudo'
 stdout, stderr, status = Open3.capture3(*cmd)
 
-File.write("#{ARGV[0]}", stdout + stderr)
+File.write("/tmp/proc_buffer", stdout + stderr)
 
 exit status.exitstatus
-
-
