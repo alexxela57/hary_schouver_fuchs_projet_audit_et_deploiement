@@ -15,7 +15,6 @@ Un aide-mémoire concis et propre pour dresser l’état d’une machine Linux :
 7. [Processus gourmands en réseau](#7-processus-gourmands-en-réseau)  
 8. [Services clés — présence & statut](#8-services-clés--présence--statut)  
 
-
 ---
 
 ## 1) Nom de la machine, distribution, noyau
@@ -118,6 +117,3 @@ systemctl --no-pager --type=service --all | grep -E 'sshd|cron|docker|NetworkMan
   ps -eo pid,user,comm,%mem --sort=-%mem | head -n 15
   ```
 
----
-
-*Ce README est pensé pour être collé tel quel dans un dépôt GitHub (markdown pur, sans dépendances).*
