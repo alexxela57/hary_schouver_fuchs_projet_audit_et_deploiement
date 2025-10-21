@@ -87,14 +87,14 @@ puts "--------------------------------------------------------------------------
 
 #Q7
 puts "7. Affiche les processus les plus consommateurs de CPU et de mémoire \n \n"
-#require 'open3'
+require 'open3'
 
-#cmd = %w[nethogs -t -C -d 1 -c 10]   # <- supprime 'sudo'
-#stdout, stderr, status = Open3.capture3(*cmd)
+cmd = %w[nethogs -t -C -d 1 -c 10]   # <- supprime 'sudo'
+stdout, stderr, status = Open3.capture3(*cmd)
 
-#File.write("/tmp/proc_buffer", stdout + stderr)
+File.write("/tmp/proc_buffer", stdout + stderr)
 
-#exit status.exitstatus
+exit status.exitstatus
 puts "---------------------------------------------------------------------------------------------------"
 
 #Q8
@@ -105,7 +105,7 @@ $stdout = original_stdout
 
 #récupération des lignes qui sont puts
 lignes = buffer.string.split("\n")
-File.write("./resultats.json", JSON.pretty_generate(lignes))
+File.write("resultats.json", JSON.pretty_generate(lignes))
 puts lignes
 
 puts "###################################################################################################"
