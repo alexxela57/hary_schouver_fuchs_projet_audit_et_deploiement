@@ -10,8 +10,7 @@ free -h | awk '{print $1, $2, $3}'
 # 3. liste des interfaces réseau : adresses MAC et IP associées
 affiche MAC, IPv4, IPv6
 ```
-ip -br -c link | awk '{print $1, $3}'
-ip -c -o -4 -6 addr show | awk '{print $2, $4}'
+ip a | grep -E "(link|inet|: )"
 ```
 # 4. liste des utilisateurs humain existants, en distinguant ceux actuellement connectés
 ```
