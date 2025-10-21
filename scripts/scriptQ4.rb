@@ -13,8 +13,8 @@ end
   end
 end
 
-puts "connectés : "
+puts "Utilisateur(s) connecté(s) : "
 puts connectes
-puts "deconnectés : "
+puts "Utilisateur(s) deconnecté(s) : "
 puts deconnectes
 
