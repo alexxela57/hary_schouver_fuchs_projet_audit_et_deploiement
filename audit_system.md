@@ -18,9 +18,9 @@ grep -E '^[^:]*:[^:]*:[1-9][0-9]{3,}:' /etc/passwd | cut -d: -f1
 users | grep "$u"
 ```
 # 5. espace disque par partition (disponible, utilisé)
-df pour afficher les partitions et -h pour afficher en Go
+df pour afficher les partitions et -h pour afficher en Go. On a mit un tail pour ne pas afficher la première ligne (elle ne servait pas et allait nous poser problème pour la regex).
 ```
-df -h -x tmpfs -x devtmpfs --output=source,size,used,avail,pcent
+df -h -x tmpfs -x devtmpfs --output=source,size,used,avail,pcent | tail -n +2
 ```
 # 6. processus les plus consommateurs de CPU et de mémoire 
 ```
