@@ -24,7 +24,7 @@ df -h -x tmpfs -x devtmpfs --output=source,size,used,avail,pcent
 ```
 # 6. processus les plus consommateurs de CPU et de mémoire 
 ```
-ps -eo pid,user,comm,%cpu,%mem --sort=-%cpu | awk '$4+0 > 5.0 &&  $5+0 > 5.0'
+ps -eo pid,user,comm,%cpu,%mem --sort=-%cpu | awk '$6 > 0.0 && $7 > 2.0'
 
 ```
 # 7. processus les plus consommateurs de trafic réseau
