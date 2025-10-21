@@ -6,17 +6,18 @@ Un aide-mémoire concis et propre pour dresser l’état d’une machine Linux :
 
 ## Sommaire
 
-1. [Nom de la machine, distribution, noyau](#1-nom-de-la-machine-distribution-noyau)  
-2. [Uptime, charge, mémoire & swap](#2-uptime-charge-mémoire--swap)  
-3. [Interfaces réseau, MAC, IPv4/IPv6](#3-interfaces-réseau-mac-ipv4ipv6)  
-4. [Comptes humains & connexions actives](#4-comptes-humains--connexions-actives)  
-5. [Espace disque par partition](#5-espace-disque-par-partition)  
-6. [Processus gourmands CPU/Mémoire](#6-processus-gourmands-cpumémoire)  
-7. [Processus gourmands en réseau](#7-processus-gourmands-en-réseau)  
-8. [Services clés — présence & statut](#8-services-clés--présence--statut)  
+1. [Nom de la machine, distribution, noyau](#sec-1-nom-de-la-machine-distribution-noyau)  
+2. [Uptime, charge, mémoire & swap](#sec-2-uptime-charge-memoire-swap)  
+3. [Interfaces réseau, MAC, IPv4/IPv6](#sec-3-interfaces-reseau-mac-ipv4-ipv6)  
+4. [Comptes humains & connexions actives](#sec-4-comptes-humains-connexions-actives)  
+5. [Espace disque par partition](#sec-5-espace-disque-par-partition)  
+6. [Processus gourmands CPU/Mémoire](#sec-6-processus-gourmands-cpu-memoire)  
+7. [Processus gourmands en réseau](#sec-7-processus-gourmands-en-reseau)  
+8. [Services clés — présence & statut](#sec-8-services-cles-presence-statut)  
 
 ---
 
+<a id="sec-1-nom-de-la-machine-distribution-noyau"></a>
 ## 1) Nom de la machine, distribution, noyau
 
 ```bash
@@ -27,6 +28,7 @@ neofetch --stdout | grep -P '^\s*\w+@(.+)$|^OS:|^Kernel:'
 
 ---
 
+<a id="sec-2-uptime-charge-memoire-swap"></a>
 ## 2) Uptime, charge, mémoire & swap
 
 ```bash
@@ -38,18 +40,24 @@ free -h | awk '{print $1, $2, $3}'
 
 ---
 
+<a id="sec-3-interfaces-reseau-mac-ipv4-ipv6"></a>
 ## 3) Interfaces réseau : MAC, IPv4, IPv6
 
 ```bash
 ip a | grep -E "(link|inet|: )"
 ```
 
-*`ip address` liste les adresses et propriétés des interfaces (IPv4/IPv6). La ligne `link/ether` expose la MAC.*  
-*Variante compacte :*
+*`ip a` liste les adresses et propriétés des interfaces (IPv4/IPv6) + MAC.*  
 *Nous avons fait le choix de parser l'affichage du résultat de la regex sur les adresses IP et MAC puis de le filtrer dans le script Ruby.*
+
+
+```bash
+ip -br -c addr
+```
 
 ---
 
+<a id="sec-4-comptes-humains-connexions-actives"></a>
 ## 4) Comptes humains & connexions actives
 
 ```bash
@@ -57,7 +65,7 @@ ip a | grep -E "(link|inet|: )"
 grep -E '^[^:]*:[^:]*:[1-9][0-9]{3,}:' /etc/passwd | cut -d: -f1
 
 # Utilisateurs actuellement connectés
-users | grep "$u"
+users
 ```
 
 *Nous avons fait le choix d'utiliser une regex pour récupérer la ligne des users humains, puis utiliser cut afin de ne garder que le nom.*
@@ -66,6 +74,7 @@ users | grep "$u"
 
 ---
 
+<a id="sec-5-espace-disque-par-partition"></a>
 ## 5) Espace disque par partition
 
 ```bash
@@ -76,16 +85,18 @@ df -h -x tmpfs -x devtmpfs --output=source,size,used,avail,pcent
 
 ---
 
+<a id="sec-6-processus-gourmands-cpu-memoire"></a>
 ## 6) Processus les plus gourmands CPU/Mémoire
 
 ```bash
-ps -eo pid,user,comm,%cpu,%mem --sort=-%cpu | awk '$4+0 > 5.0 && $5+0 > 5.0'
+ps -eo pid,user,comm,%cpu,%mem --sort=-%cpu | awk '$6 > 0.0 && $7 > 2.0'
 ```
 
-*`ps` dresse un instantané des processus ; tri par CPU décroissant, puis filtrage simple (> 5 % CPU **et** > 5 % RAM).*
+*`ps` dresse un instantané des processus ; tri par CPU décroissant, puis filtrage simple (> 0 % CPU **et** > 5 % RAM).*
 
 ---
 
+<a id="sec-7-processus-gourmands-en-reseau"></a>
 ## 7) Processus les plus gourmands en trafic réseau
 
 ```bash
@@ -96,8 +107,10 @@ sudo nethogs -t -C -d 1 -c 10
 
 *On aurait pu utiliser tcptop pour monitorer les performances réseau du système à un niveau noyau mais cet outil n'est pas disponible sur toutes les distribution.*
 
+
 ---
 
+<a id="sec-8-services-cles-presence-statut"></a>
 ## 8) Présence et statut de services clés
 
 ```bash
@@ -110,10 +123,12 @@ systemctl --no-pager --type=service --all | grep -E 'sshd|cron|docker|NetworkMan
 
 ### Astuces
 
-- Affichage réseau plus lisible : `ip -c a | grep -E "(link|inet|: )"` (MAC) + (IPv4/IPv6).  
+- Affichage réseau plus lisible : `ip -c a | grep -E "(link|inet|: )"` (MAC) + (IPv4/IPv6)  
 - Pour ne montrer **que** le top CPU *ou* le top RAM, ajuster le tri/filtre :  
   ```bash
   ps -eo pid,user,comm,%cpu --sort=-%cpu | head -n 15
   ps -eo pid,user,comm,%mem --sort=-%mem | head -n 15
   ```
+
+---
 
