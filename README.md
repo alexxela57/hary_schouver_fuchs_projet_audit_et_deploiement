@@ -14,7 +14,7 @@ Un aide-mémoire concis et propre pour dresser l’état d’une machine Linux :
 6. [Processus gourmands CPU/Mémoire](#6-processus-gourmands-cpumémoire)  
 7. [Processus gourmands en réseau](#7-processus-gourmands-en-réseau)  
 8. [Services clés — présence & statut](#8-services-clés--présence--statut)  
-9. [Prérequis & notes](#9-prérequis--notes)
+
 
 ---
 
@@ -106,15 +106,6 @@ systemctl --no-pager --type=service --all | grep -E 'sshd|cron|docker|NetworkMan
 ```
 
 *`systemctl` permet d’inspecter l’état des services `systemd` (chargé, actif/inactif, échec).*
-
----
-
-## 9) Prérequis & notes
-
-- **Paquets** à installer (si absents) :  
-  Debian/Ubuntu : `sudo apt install neofetch nethogs` • Fedora : `sudo dnf install neofetch nethogs` • Arch : `sudo pacman -S neofetch nethogs`
-- **Réseau** : `nethogs` nécessite `sudo` pour lire les compteurs de trafic à l’échelle processus.  
-- **Regex** : l’option `grep -P` s’appuie sur PCRE ; selon la distribution, le support peut être optionnel.
 
 ---
 
