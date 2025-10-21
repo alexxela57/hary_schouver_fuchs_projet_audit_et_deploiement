@@ -50,11 +50,6 @@ ip a | grep -E "(link|inet|: )"
 *`ip a` liste les adresses et propriétés des interfaces (IPv4/IPv6) + MAC.*  
 *Nous avons fait le choix de parser l'affichage du résultat de la regex sur les adresses IP et MAC puis de le filtrer dans le script Ruby.*
 
-
-```bash
-ip -br -c addr
-```
-
 ---
 
 <a id="sec-4-comptes-humains-connexions-actives"></a>
@@ -65,7 +60,7 @@ ip -br -c addr
 grep -E '^[^:]*:[^:]*:[1-9][0-9]{3,}:' /etc/passwd | cut -d: -f1
 
 # Utilisateurs actuellement connectés
-users
+users | grep "$u"
 ```
 
 *Nous avons fait le choix d'utiliser une regex pour récupérer la ligne des users humains, puis utiliser cut afin de ne garder que le nom.*
@@ -78,10 +73,10 @@ users
 ## 5) Espace disque par partition
 
 ```bash
-df -h -x tmpfs -x devtmpfs --output=source,size,used,avail,pcent
+df -h -x tmpfs -x devtmpfs --output=source,pcent,size,used,avail | tail -n +2 | sort -k2 -nr
 ```
 
-*`df` rapporte l’espace utilisé/disponible sur les systèmes de fichiers montés ; ici, on masque `tmpfs`/`devtmpfs` et on affiche les colonnes essentielles.*
+*`df` rapporte l’espace utilisé/disponible sur les systèmes de fichiers montés ; ici, on masque `tmpfs`/`devtmpfs` et on affiche les colonnes essentielles avec le pourcentage des partitions dans l'ordre décroissant.*
 
 ---
 
