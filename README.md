@@ -127,3 +127,25 @@ systemctl --no-pager --type=service --all | grep -E 'sshd|cron|docker|NetworkMan
 
 ---
 
+### Lancer le projet via Docker
+
+- Build l'image
+
+```
+docker build -t audit-linux .
+```
+
+- Lancer le docker 
+
+```
+docker run --rm \                                
+  --pid=host \
+  --network=host \
+  -v /var/run/utmp:/var/run/utmp:ro \
+  -v /etc/passwd:/etc/passwd:ro \
+  -v "$PWD":/app \
+  audit-linux
+```
+
+---
+
