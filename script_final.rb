@@ -145,20 +145,24 @@ process_names.each do |name|
 end
 
 
-
-
-
-
 #######################################
-# Sauvegarde des résultats dans un fichier JSON
+# Sauvegarde des résultats dans un fichier JSON avec horodatage
 #######################################
 $stdout = original_stdout
-
-# Récupération des lignes qui sont puts
 lignes = buffer.string.split("\n")
-File.write("./resultats.json", JSON.pretty_generate(lignes))
-puts lignes
 
+horodatage = Time.now.strftime("%Y-%m-%dT%H:%M:%S")
+
+resultat = {
+  horodatage: horodatage,
+  lignes: lignes
+}
+
+fichier_nom = "./resultats_#{Time.now.strftime("%Y-%m-%d_%H-%M-%S")}.json"
+File.write(fichier_nom, JSON.pretty_generate(resultat))
+
+puts lignes
 puts "###################################################################################################"
-puts "Résultats disponibles dans le fichier .json !"
+puts "Résultats disponibles dans le fichier JSON : #{fichier_nom}"
 puts "###################################################################################################"
+
