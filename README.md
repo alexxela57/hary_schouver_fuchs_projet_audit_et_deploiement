@@ -143,3 +143,71 @@ docker run --rm --pid=host --network=host -v /var/run/utmp:/var/run/utmp:ro -v /
 
 ---
 
+
+### 🐳 Dockerfile 
+
+Ce **Dockerfile** crée une image légère basée sur **Debian Bookworm
+Slim** pour exécuter un script Ruby en environnement réseau contrôlé.
+
+------------------------------------------------------------------------
+
+## 🔧 Étapes principales
+
+1.  **Image de base**
+
+    ``` dockerfile
+    FROM debian:bookworm-slim
+    ```
+
+    Utilise une version minimaliste de Debian pour réduire la taille
+    finale de l'image.
+
+2.  **Configuration non interactive**
+
+    ``` dockerfile
+    ENV DEBIAN_FRONTEND=noninteractive
+    ```
+
+    Empêche les invites interactives lors de l'installation des paquets
+    (utile pour les builds automatiques).
+
+3.  **Installation des dépendances**
+
+    ``` dockerfile
+    RUN apt-get update && apt-get install -y --no-install-recommends          ruby neofetch nethogs iproute2 procps gawk grep util-linux          openssh-client ca-certificates &&        rm -rf /var/lib/apt/lists/*
+    ```
+
+    Installe les outils essentiels :
+
+    -   **ruby** : pour exécuter le script Ruby\
+    -   **neofetch**, **nethogs**, **iproute2**, **procps** : outils
+        système et réseau\
+    -   **grep**, **gawk**, **util-linux** : manipulation de texte et
+        processus\
+    -   **openssh-client**, **ca-certificates** : communications
+        sécurisées\
+        Le cache APT est ensuite supprimé pour alléger l'image.
+
+4.  **Répertoire de travail**
+
+    ``` dockerfile
+    WORKDIR /app
+    ```
+
+    Définit le répertoire principal où sera copié et exécuté le script.
+
+5.  **Copie du script Ruby**
+
+    ``` dockerfile
+    COPY script_final.rb /app/script_final.rb
+    ```
+
+    Ajoute le script Ruby dans le conteneur.
+
+6.  **Point d'entrée**
+
+    ``` dockerfile
+    ENTRYPOINT ["ruby", "/app/script_final.rb"]
+    ```
+
+    Définit le script Ruby comme commande principale du conteneur.
