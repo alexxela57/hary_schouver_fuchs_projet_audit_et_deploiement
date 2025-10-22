@@ -4,6 +4,7 @@
 require 'json'
 require 'stringio'
 
+
 #######################################
 # Buffer pour capturer les puts
 #######################################
@@ -119,7 +120,9 @@ require 'open3'
 cmd = %w[nethogs -t -C -d 1 -c 10]   # <- supprime 'sudo'
 stdout, stderr, status = Open3.capture3(*cmd)
 
-File.write("/tmp/proc_buffer", stdout + stderr)
+puts stdout + stderr
+
+
 puts "---------------------------------------------------------------------------------------------------"
 
 #######################################
@@ -127,7 +130,24 @@ puts "--------------------------------------------------------------------------
 #######################################
 puts "8. Affiche la présence et le status de certains services clés \n \n" 
 
-puts  `systemctl --no-pager --type=service --all | grep -E 'sshd|cron|docker|NetworkManager|systemd-networkd|rsyslog|systemd-journald|firewalld|ufw|nginx|apache2|httpd|mariadb|mysqld|postgresql'`
+
+
+
+process_names = %w[
+  sshd cron dockerd NetworkManager systemd-networkd
+  rsyslog systemd-journald firewalld ufw
+  nginx apache2 httpd mariadbd mariadb mysqld postgres
+]
+
+process_names.each do |name|
+  up = system("pgrep -x #{name} >/dev/null 2>&1")
+  printf("%-18s %s\n", name, up ? "up" : "down")
+end
+
+
+
+
+
 
 #######################################
 # Sauvegarde des résultats dans un fichier JSON
