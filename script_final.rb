@@ -112,7 +112,7 @@ puts "--------------------------------------------------------------------------
 #######################################
 # Q7 - (Désactivé) Processus réseau via nethogs
 #######################################
-puts "7. Affiche les processus les plus consommateurs de CPU et de mémoire \n \n"
+puts "7. Processus les plus gourmands en trafic réseau \n \n"
 
 # require 'open3'
 
