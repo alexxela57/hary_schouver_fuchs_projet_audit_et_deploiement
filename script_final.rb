@@ -149,20 +149,25 @@ end
 # Sauvegarde des résultats dans un fichier JSON avec horodatage
 #######################################
 $stdout = original_stdout
+
+# Récupération des lignes qui sont puts
 lignes = buffer.string.split("\n")
 
-horodatage = Time.now.strftime("%Y-%m-%dT%H:%M:%S")
+# Ajout d’un horodatage ISO 8601
+ENV['TZ'] = 'Europe/Paris'
+horodatage = Time.now.strftime("%Y-%m-%d_%H:%M:%S")
 
+# Construction de la structure JSON avec horodatage
 resultat = {
   horodatage: horodatage,
   lignes: lignes
 }
 
-fichier_nom = "./resultats_#{Time.now.strftime("%Y-%m-%d_%H-%M-%S")}.json"
+# Nom du fichier avec horodatage (ex: resultats_2025-10-22T15-30-00.json)
+fichier_nom = "resultats_#{Time.now.strftime("%Y-%m-%d_%H:%M:%S")}.json"
 File.write(fichier_nom, JSON.pretty_generate(resultat))
 
 puts lignes
 puts "###################################################################################################"
 puts "Résultats disponibles dans le fichier JSON : #{fichier_nom}"
 puts "###################################################################################################"
-
