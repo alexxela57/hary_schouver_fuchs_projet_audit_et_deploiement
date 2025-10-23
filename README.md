@@ -1,6 +1,6 @@
 # Audit système Linux
 
-Un aide-mémoire concis et propre pour dresser l’état d’une machine Linux : identité, charge, réseau, comptes, stockage, services et « top talkers » CPU/Mémoire/Réseau. Commandes sûres par défaut (lecture seule), avec quelques variantes utiles.
+Liste de commandes dans le but de dresser l’état d’une machine Linux : identité, charge, réseau, comptes, stockage, services et « top talkers » CPU/Mémoire/Réseau. 
 
 ---
 
@@ -147,7 +147,7 @@ docker run --rm --pid=host --network=host -v /var/run/utmp:/var/run/utmp:ro -v /
 ### 🐳 Dockerfile 
 
 Ce **Dockerfile** crée une image légère basée sur **Debian Bookworm
-Slim** pour exécuter un script Ruby en environnement réseau contrôlé.
+Slim** pour exécuter un script Ruby sur la machine hôte du client.
 
 ------------------------------------------------------------------------
 
@@ -168,8 +168,7 @@ Slim** pour exécuter un script Ruby en environnement réseau contrôlé.
     ENV DEBIAN_FRONTEND=noninteractive
     ```
 
-    Empêche les invites interactives lors de l'installation des paquets
-    (utile pour les builds automatiques).
+    Empêche les invites interactives lors de l'installation des paquets, pour des builds automatiques.
 
 3.  **Installation des dépendances**
 
