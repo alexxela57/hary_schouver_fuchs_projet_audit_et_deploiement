@@ -165,18 +165,24 @@ docker build -t audit-linux .
 ```
 docker run --rm --pid=host --network=host -v /var/run/utmp:/var/run/utmp:ro -v /etc/passwd:/etc/passwd:ro -v "$PWD":/app audit-linux
 ```
+- -pid=host : le conteneur voit tous les processus en cours du système hôte.
+- --network=host : le conteneur utilise directement les interfaces et adresses IP du système.
+- -v /var/run/utmp:/var/run/utmp:ro : Monte le fichier utmp de l’hôte en lecture seule (ro).
+- -v /etc/passwd:/etc/passwd:ro : Monte le fichier passwd en lecture seule également.
+- -v "$PWD":/app : Monte le répertoire courant dans le conteneur sous le le répertoire de travail /app. Cela permet au conteneur de lire/écrire des fichiers dans ton dossier actuel.
+- audit-linux : C'est le nom de l'image.
 
 ---
 
 
-### 🐳 Dockerfile 
+### Dockerfile 
 
 Ce **Dockerfile** crée une image légère basée sur **Debian Bookworm
 Slim** pour exécuter un script Ruby sur la machine hôte du client.
 
 ------------------------------------------------------------------------
 
-## 🔧 Étapes principales
+## --network=hostÉtapes principales
 
 1.  **Image de base**
 
