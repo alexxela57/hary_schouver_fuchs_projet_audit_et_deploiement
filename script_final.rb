@@ -117,9 +117,11 @@ puts "7. Processus les plus gourmands en trafic réseau \n \n"
 
 require 'open3' 
 
+# tableau sans interpolation 
 cmd = %w[nethogs -t -C -d 1 -c 10]   
-stdout, stderr, status = Open3.capture3(*cmd) # supprimer 'sudo' et capture la stdout et nethogs
-
+# supprimer 'sudo' et capture la stdout et nethogs
+# '*' est l'opérateur de décomposition, qui permet d'écrire la commande en un tableau entier
+stdout, stderr, status = Open3.capture3(*cmd) 
 puts stdout + stderr
 
 
@@ -140,7 +142,9 @@ process_names = %w[
 ]
 
 process_names.each do |name|
-  up = system("pgrep -x #{name} >/dev/null 2>&1")
+  # pgrep cherche un processus par son nom | >/dev/null redirige stdout stderr vers void 
+  up = system("pgrep -x #{name} >/dev/null 2>&1") 
+  # 18 emplacements par rapport au nombre de services
   printf("%-18s %s\n", name, up ? "up" : "down")
 end
 
