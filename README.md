@@ -165,7 +165,7 @@ docker build -t audit-linux .
 ```
 docker run --rm --pid=host --network=host -v /var/run/utmp:/var/run/utmp:ro -v /etc/passwd:/etc/passwd:ro -v "$PWD":/app audit-linux
 ```
-- -pid=host : le conteneur voit tous les processus en cours du système hôte.
+- --pid=host : le conteneur voit tous les processus en cours du système hôte.
 - --network=host : le conteneur utilise directement les interfaces et adresses IP du système.
 - -v /var/run/utmp:/var/run/utmp:ro : Monte le fichier utmp de l’hôte en lecture seule (ro).
 - -v /etc/passwd:/etc/passwd:ro : Monte le fichier passwd en lecture seule également.
