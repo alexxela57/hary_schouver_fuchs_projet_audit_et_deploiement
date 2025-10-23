@@ -26,6 +26,10 @@ neofetch --stdout | grep -P '^\s*\w+@(.+)$|^OS:|^Kernel:'
 
 *Affiche l’utilisateur@hôte, l’OS et la version du noyau dans un format lisible. Nous avons fait le choix d'utiliser neofetch puisque fastfetch n'est pas disponible sur toutes les distributions. Plutôt que d'utiliser plusieurs commandes, on a décidé de recourir à un expression régulière.*
 
+- L’option --stdout (“standard output”) force neofetch à envoyer une version textuelle, brute et propre des infos vers la sortie standard, sans les couleurs ni les graphismes.
+
+- L’option -P active le moteur d’expressions régulières Perl
+
 ---
 
 <a id="sec-2-uptime-charge-memoire-swap"></a>
@@ -67,6 +71,10 @@ users | grep "$u"
 
 *`users` affiche les logins présents sur le système à l’instant T (sessions ouvertes).*
 
+- -E dans grep active un autre type de moteur de regex : les expressions régulières étendues
+
+- cut -d: -f1 prend chaque ligne du fichier, la découpe selon : et n’affiche que le premier morceau.
+
 ---
 
 <a id="sec-5-espace-disque-par-partition"></a>
@@ -78,6 +86,13 @@ df -h -x tmpfs -x devtmpfs --output=source,pcent,size,used,avail | tail -n +2 | 
 
 *`df` rapporte l’espace utilisé/disponible sur les systèmes de fichiers montés ; ici, on masque `tmpfs`/`devtmpfs` et on affiche les colonnes essentielles avec le pourcentage des partitions dans l'ordre décroissant.*
 
+
+- Montre uniquement les colonnes souhaitées (--output=source,pcent,size,used,avail)
+
+- Supprime la ligne d’en-tête (tail -n +2)
+
+- Trie les systèmes de fichiers selon leur taux d’occupation décroissant (sort -k2 -nr)
+
 ---
 
 <a id="sec-6-processus-gourmands-cpu-memoire"></a>
@@ -88,6 +103,10 @@ ps -eo pid,user,comm,%cpu,%mem --sort=-%cpu | awk '$6 > 0.0 && $7 > 2.0'
 ```
 
 *`ps` dresse un instantané des processus ; tri par CPU décroissant, puis filtrage simple (> 0 % CPU **et** > 5 % RAM).*
+
+- -e affiche tous les processus
+- -o permet de choisir les colonnes à afficher
+- --sort=-%cpu trier selon la colonne % d'utilisation CPU des processus
 
 ---
 
@@ -102,6 +121,10 @@ sudo nethogs -t -C -d 1 -c 10
 
 *On aurait pu utiliser tcptop pour monitorer les performances réseau du système à un niveau noyau mais cet outil n'est pas disponible sur toutes les distribution.*
 
+- -c 10 : 10 itérations
+- -d 1 : délai entre chaque itération
+- -C afficher les valeurs de débit cumulée
+- -t affiche les données en texte brut
 
 ---
 
@@ -113,6 +136,8 @@ systemctl --no-pager --type=service --all | grep -E 'sshd|cron|docker|NetworkMan
 ```
 
 *`systemctl` permet d’inspecter l’état des services `systemd` (chargé, actif/inactif, échec).*
+
+- --no-pager la sortie est envoyée directement au terminal stdout
 
 ---
 
