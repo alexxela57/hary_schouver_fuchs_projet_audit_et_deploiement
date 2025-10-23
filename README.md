@@ -182,7 +182,7 @@ Slim** pour exécuter un script Ruby sur la machine hôte du client.
 
 ------------------------------------------------------------------------
 
-## --network=hostÉtapes principales
+## Étapes principales
 
 1.  **Image de base**
 
