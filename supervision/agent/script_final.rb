@@ -216,37 +216,51 @@ end
 q8 = services
 
 #######################################
-# Sauvegarde des résultats dans un fichier JSON avec horodatage
+# Sauvegarde JSON propre pour json_exporter
 #######################################
 $stdout = original_stdout
-
-# Récupération des lignes qui sont puts
-lignes = buffer.string.split("\n")
-
-# Ajout d’un horodatage ISO 8601
 ENV['TZ'] = 'Europe/Paris'
-horodatage = Time.now.strftime("%Y-%m-%d_%H:%M:%S")
 
-# Construction de la structure JSON avec horodatage
-resultat = {
-  horodatage: horodatage,
-  audit: {
-    q1: q1,
-    q2: q2,
-    q3: q3,
-    q4: q4,
-    q5: q5,
-    q6: q6,
-    q7: q7,
-    q8: q8,
+def read_load
+  l1,l5,l15 = File.read('/proc/loadavg').split[0,3].map!(&:to_f)
+  { load1: l1, load5: l5, load15: l15 }
+end
+
+def read_mem
+  info = {}
+  File.readlines('/proc/meminfo').each do |l|
+    k,v = l.split(':',2)
+    info[k] = v.to_s.strip.split.first.to_i * 1024
+  end
+  total = info['MemTotal']||0
+  avail = info['MemAvailable']||(info['MemFree']||0)
+  swap_t = info['SwapTotal']||0
+  swap_f = info['SwapFree'] ||0
+  { total_bytes: total, used_bytes: [total-avail,0].max,
+    swap_total_bytes: swap_t, swap_used_bytes: [swap_t-swap_f,0].max }
+end
+
+def read_disks
+  out = `df -B1 -x tmpfs -x devtmpfs --output=target,size,used 2>/dev/null`.lines
+  out.shift
+  out.map { |ln| mnt,size,used = ln.strip.split(/\s+/,3);
+            { mount: mnt.gsub(/["\\]/,''), total_bytes: size.to_i, used_bytes: used.to_i } }
+end
+
+def read_services(names); names.map{ |n| {name: n, up: system("pgrep -x #{n} >/dev/null 2>&1") ? 1 : 0} }; end
+
+  horodatage = Time.now.strftime("%Y-%m-%d_%H:%M:%S")
+
+  resultat = {
+    metrics: {
+              meta: { hostname: `hostname`.strip, os: (`. /etc/os-release; echo $PRETTY_NAME`.strip rescue `uname -s`.strip),
+                      kernel: `uname -r`.strip, ts: horodatage },
+              load: read_load,
+              mem:  read_mem,
+              disk: read_disks,
+              services: read_services(process_names) # process_names défini plus haut dans ton script
+             }
   }
-}
 
-# Nom du fichier avec horodatage (ex: resultats_2025-10-22T15-30-00.json)
-fichier_nom = "resultats_#{Time.now.strftime("%Y-%m-%d_%H:%M:%S")}.json"
-File.write(fichier_nom, JSON.pretty_generate(resultat))
-
-puts lignes
-puts "###################################################################################################"
-puts "Résultats disponibles dans le fichier JSON : #{fichier_nom}"
-puts "###################################################################################################"
+  File.write("/app/audit.json", JSON.pretty_generate(resultat))
+  puts "JSON écrit: /app/audit.json"

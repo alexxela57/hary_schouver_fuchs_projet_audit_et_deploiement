@@ -1,0 +1,39 @@
+modules:
+  agent:
+    metrics:
+      - name: agent
+        type: object
+        help: Agent info
+        path: '{.metrics.meta}'
+        labels: { hostname: '{.hostname}', os: '{.os}', kernel: '{.kernel}' }
+        values: { info: 1 }
+
+      - name: cpu
+        type: object
+        help: Load average
+        path: '{.metrics.load}'
+        values: { load1: '{.load1}', load5: '{.load5}', load15: '{.load15}' }
+
+      - name: mem
+        type: object
+        help: Memory bytes
+        path: '{.metrics.mem}'
+        values:
+          total_bytes: '{.total_bytes}'
+          used_bytes:  '{.used_bytes}'
+          swap_total_bytes: '{.swap_total_bytes}'
+          swap_used_bytes:  '{.swap_used_bytes}'
+
+      - name: disk
+        type: object
+        help: Disk bytes per mountpoint
+        path: '{.metrics.disk[*]}'
+        labels: { mountpoint: '{.mount}' }
+        values: { total_bytes: '{.total_bytes}', used_bytes: '{.used_bytes}' }
+
+      - name: service
+        type: object
+        help: Critical services
+        path: '{.metrics.services[*]}'
+        labels: { service: '{.name}' }
+        values: { up: '{.up}' }

@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ruby neofetch nethogs iproute2 procps gawk grep util-linux \
+      ruby neofetch nethogs iproute2 procps busybox gawk grep util-linux \
       openssh-client ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
@@ -15,4 +15,4 @@ WORKDIR /app
 COPY script_final.rb /app/script_final.rb
 
 # Point d’entrée : exécuter le script
-ENTRYPOINT ["ruby", "/app/script_final.rb"]
+#ENTRYPOINT ["ruby", "/app/script_final.rb"]
