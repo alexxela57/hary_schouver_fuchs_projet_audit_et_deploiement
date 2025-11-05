@@ -1,14 +1,17 @@
-# compose spec moderne : pas de "version:" (évite l'avertissement)
+# Compose spec moderne : pas de "version:"
 networks:
   monitoring: {}
+
+volumes:
+  grafana-data: {}
 
 services:
   agent_a:
     build: ./agent
     container_name: agent_a
-    pid: "host"                         # voit les processus de l’hôte
+    pid: "host"
     environment:
-      INTERVAL: "10"                    # secondes entre snapshots JSON
+      INTERVAL: "10"
     command: >
       sh -c "ruby /app/script_final.rb;
              busybox httpd -f -p 9101 -h /app &
@@ -69,7 +72,9 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_PATHS_PROVISIONING: /etc/grafana/provisioning
     volumes:
+      - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports: ["3000:3000"]
     depends_on: [prometheus]
     networks: [monitoring]
