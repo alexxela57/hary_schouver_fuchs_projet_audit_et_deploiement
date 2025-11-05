@@ -200,8 +200,8 @@ puts "8. Affiche la présence et le status de certains services clés \n \n"
 
 
 process_names = %w[
-  sshd cron dockerd NetworkManager systemd-networkd
-  rsyslog systemd-journald firewalld ufw
+  sshd cron crond dockerd NetworkManager systemd-networkd
+  rsyslogd systemd-journald firewalld ufw
   nginx apache2 httpd mariadbd mariadb mysqld postgres
 ]
 
