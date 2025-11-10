@@ -2,17 +2,13 @@ FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-
+# Outils nécessaires : Ruby, httpd BusyBox, nsenter (util-linux), iproute2, procps...
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ruby neofetch nethogs iproute2 procps busybox gawk grep util-linux \
-      openssh-client ca-certificates && \
+    ruby busybox iproute2 procps gawk grep util-linux neofetch \
+    openssh-client ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# Répertoire d’app et de sortie
 WORKDIR /app
-
-# Copie du script Ruby
 COPY script_final.rb /app/script_final.rb
 
-# Point d’entrée : exécuter le script
-#ENTRYPOINT ["ruby", "/app/script_final.rb"]
+# On laisse la commande au compose (pour démarrer httpd + loop)

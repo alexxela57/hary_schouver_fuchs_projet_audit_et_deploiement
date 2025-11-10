@@ -1,4 +1,3 @@
-# grafana/provisioning/dashboards/dashboards.yml
 apiVersion: 1
 providers:
   - name: 'git'

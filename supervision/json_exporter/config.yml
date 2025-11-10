@@ -1,39 +1,54 @@
 modules:
   agent:
+    http_client_config:
+      follow_redirects: false
+      enable_http2: false
     metrics:
-      - name: agent
-        type: object
+      - name: agent_info
         help: Agent info
+        type: object
         path: '{.metrics.meta}'
-        labels: { hostname: '{.hostname}', os: '{.os}', kernel: '{.kernel}' }
-        values: { info: 1 }
+        labels:
+          hostname: '{.hostname}'
+          kernel:   '{.kernel}'
+          os:       '{.os}'
+        values:
+          info: '1'
 
       - name: cpu
-        type: object
         help: Load average
+        type: object
         path: '{.metrics.load}'
-        values: { load1: '{.load1}', load5: '{.load5}', load15: '{.load15}' }
+        values:
+          load1:  '{.load1}'
+          load5:  '{.load5}'
+          load15: '{.load15}'
 
       - name: mem
-        type: object
         help: Memory bytes
+        type: object
         path: '{.metrics.mem}'
+        values:
+          total_bytes:       '{.total_bytes}'
+          used_bytes:        '{.used_bytes}'
+          swap_total_bytes:  '{.swap_total_bytes}'
+          swap_used_bytes:   '{.swap_used_bytes}'
+
+      - name: disk
+        help: Disk bytes per mountpoint
+        type: object
+        path: '{.metrics.disk[*]}'
+        labels:
+          mountpoint: '{.mount}'
         values:
           total_bytes: '{.total_bytes}'
           used_bytes:  '{.used_bytes}'
-          swap_total_bytes: '{.swap_total_bytes}'
-          swap_used_bytes:  '{.swap_used_bytes}'
-
-      - name: disk
-        type: object
-        help: Disk bytes per mountpoint
-        path: '{.metrics.disk[*]}'
-        labels: { mountpoint: '{.mount}' }
-        values: { total_bytes: '{.total_bytes}', used_bytes: '{.used_bytes}' }
 
       - name: service
-        type: object
         help: Critical services
+        type: object
         path: '{.metrics.services[*]}'
-        labels: { service: '{.name}' }
-        values: { up: '{.up}' }
+        labels:
+          service: '{.name}'
+        values:
+          up: '{.up}'

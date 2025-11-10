@@ -1,4 +1,4 @@
-# Compose spec moderne : pas de "version:"
+# Compose spec (pas de "version:")
 networks:
   monitoring: {}
 
@@ -10,6 +10,9 @@ services:
     build: ./agent
     container_name: agent_a
     pid: "host"
+    cap_add: ["SYS_ADMIN"]
+    volumes:
+      - "/:/host:ro,rslave"
     environment:
       INTERVAL: "10"
     command: >
@@ -30,6 +33,9 @@ services:
     build: ./agent
     container_name: agent_b
     pid: "host"
+    cap_add: ["SYS_ADMIN"]
+    volumes:
+      - "/:/host:ro,rslave"
     environment:
       INTERVAL: "10"
     command: >

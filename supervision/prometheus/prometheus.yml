@@ -3,11 +3,8 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: json_exporter
-    static_configs:
-      - targets: ['json_exporter:7979']
-
-  - job_name: json_agents
+  # 1) Scrute les agents via json_exporter /probe (multi-target pattern)
+  - job_name: 'json_agents'
     metrics_path: /probe
     params:
       module: [agent]
@@ -20,7 +17,12 @@ scrape_configs:
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
       - target_label: __address__
         replacement: json_exporter:7979
+      - source_labels: [__param_target]
+        target_label: instance
+
+  # 2) Scrute l’exporter lui-même
+  - job_name: 'json_exporter'
+    static_configs:
+      - targets: ['json_exporter:7979']

@@ -3,234 +3,78 @@
 
 require 'json'
 require 'stringio'
+require 'set'
 
+# ---------- Utils ----------
+def run(cmd)
+  `#{cmd}`.strip
+rescue
+  ""
+end
 
-#######################################
-# Buffer pour capturer les puts
-#######################################
+HOST = "/host" # racine du host bind-mountée dans le conteneur
+
+# ---------- Q1..Q7 : (facultatif pour affichage console) ----------
 buffer = StringIO.new
 original_stdout = $stdout
 $stdout = buffer
 
-def run(cmd)
-  `#{cmd}`.strip
-rescue
-  "Erreur exécution commande : #{cmd}"
-end
+puts "Audit host via namespaces & bind-mount\n"
 
-#######################################
-# Q1 - Affiche nom, distribution et version noyau
-#######################################
-puts "1. Affiche le nom, la distribution et la version du noyau \n \n"
+# ---------- Services (détection robuste) ----------
 
-q1 = {}
-`neofetch --stdout`.each_line do |line|
-  if line =~ /^\s*\w+@(.+)$/
-    # Affiche le hostname (ce qui est après le @)
-    q1[:hostname] = $1.strip
-    puts $1 
-  end
-end
-
-# Affiche la distribution et la version du noyau 
-puts `neofetch --stdout | grep -P 'OS:|^Kernel:'`
-q1[:os] = run("neofetch --stdout | grep -P '^OS:'").sub('OS:', '').strip
-q1[:kernel] = run("neofetch --stdout | grep -P '^Kernel:'").sub('Kernel:', '').strip
-puts "---------------------------------------------------------------------------------------------------"
-
-#######################################
-# Q2 - Charge CPU + mémoire et swap
-#######################################
-puts "2. Affiche la charge moyenne cpu, la mémoire et swap disponible et utilisés \n \n"
-
-# Charge moyenne CPU
-puts `uptime`
-
-# Mémoire et swap disponibles et utilisés
-puts `free -h | awk '{print $1, $2, $3}'`
-q2 = {
-  loadavg: run("uptime"),
-  mm_swap: run("free -h | awk '{print $1, $2, $3}'")
+SERVICE_CANDIDATES = {
+  "sshd"               => %w[sshd],
+  "cron"               => %w[crond cron],
+  "dockerd"            => %w[dockerd],
+  "NetworkManager"     => %w[NetworkManager],
+  "systemd-networkd"   => %w[systemd-networkd networkd],
+  "rsyslog"            => %w[rsyslogd],
+  "systemd-journald"   => %w[systemd-journal systemd-journald],
+  "ufw"                => %w[ufw],
+  "nginx"              => %w[nginx],
+  "apache2"            => %w[apache2 httpd],
+  "httpd"              => %w[httpd apache2],
+  "mariadb"            => %w[mariadbd mariadb mysqld],
+  "postgres"           => %w[postgres]
 }
-puts "---------------------------------------------------------------------------------------------------"
 
-#######################################
-# Q3 - Interfaces réseau (nom, MAC, IP)
-#######################################
-puts "3. Liste les interfaces réseau (@mac et @ip) \n \n"
-q3 = []
-tmp = {}
-`ip a | grep -E "(link|inet|: )"`.each_line do |line|
-    if line =~ /^\d: (.+): </
-      # Nom de l'interface
-      puts "nom : #{$1}"
-      q3 << tmp unless tmp.empty?
-      tmp = { nom: $1.strip }
-    end
-    if line =~ /^\s+link\/[^ ]+ (.+) brd/
-      # Adresse MAC
-      puts "mac : #{$1}"
-      tmp[:mac] = $1.strip
-    end
-    if line =~ /^\s+inet ([^\/]+\/\d+)/
-      # Adresse IPv4
-      puts "IPv4 : #{$1}"
-      tmp[:ipv4] = $1.strip
-    end
-    if line =~ /^\s+inet6 (.+) scope/
-      # Adresse IPv6
-      puts "IPv6 : #{$1}"
-      tmp[:ipv6] = $1.strip
-    end
-end
-q3 << tmp unless tmp.empty?
-puts "---------------------------------------------------------------------------------------------------"
-
-#######################################
-# Q4 - Utilisateurs humains connectés / déconnectés
-#######################################
-puts "4. Liste les utilisateurs humain existants, en distinguant ceux actuellement connectés \n \n"
-
-connectes = []
-deconnectes = []
-
-# Récupère les utilisateurs actuellement connectés
-`users | grep "$u"`.each_line do |line|
-  connectes << line
+def host_process_index
+  comms = Set.new
+  cmdls = []
+  Dir.glob("/host/proc/[0-9]*/comm").each  { |f| comms << File.read(f, mode: 'rb').to_s.strip rescue nil }
+  Dir.glob("/host/proc/[0-9]*/cmdline").each do |f|
+    s = (File.read(f, mode: 'rb').to_s.tr("\0", ' ').strip rescue nil)
+    cmdls << s if s && !s.empty?
+  end
+  [comms, cmdls]
 end
 
-# Liste les utilisateurs humains (UID >= 1000)
-`grep -E '^[^:]*:[^:]*:[1-9][0-9]{3,}:' /etc/passwd | cut -d: -f1 `.each_line do |line|
-  if !connectes.include?(line)
-    deconnectes << line
+def read_services_map(candidates)
+  comms, cmdls = host_process_index
+  candidates.map do |label, names|
+    up = names.any? do |n|
+      comms.include?(n) || cmdls.any? { |c| c =~ /(^|\/)#{Regexp.escape(n)}(\s|$)/ }
+    end
+    # journald fallback if hidden but socket exists
+    if !up && label == "systemd-journald" && File.socket?("/host/run/systemd/journal/socket")
+      up = true
+    end
+    { name: label, up: up ? 1 : 0 }
   end
 end
 
-puts "Utilisateur(s) connecté(s) : "
-puts connectes
-puts " "
-puts "Utilisateur(s) deconnecté(s) : "
-puts deconnectes
-puts "---------------------------------------------------------------------------------------------------"
-q4 = { connectes: connectes, deconnectes: deconnectes }
 
-#######################################
-# Q5 - Espace disque par partition (trié Uti%)
-#######################################
-puts "5. Affiche l'espace disque par partition, trié par ordre décroissant de la colonne Uti% \n \n"
-
-# Affiche l'espace disque (trié par % utilisation)
-puts "Sys. de fichiers Uti% Taille Utilisé Dispo"
-puts `df -h -x tmpfs -x devtmpfs --output=source,pcent,size,used,avail | tail -n +2 | sort -k2 -nr`
-q5 = []
-run("df -h -x tmpfs -x devtmpfs --output=source,pcent,size,used,avail | tail -n +2 | sort -k2 -nr").each_line do |line|
-  parts = line.split
-  next if parts.empty?
-  q5 << {
-    filesystem: parts[0],
-    uti: parts[1],
-    taille: parts[2],
-    utilise: parts[3],
-    dispo: parts[4]
-  }
-end
-puts "---------------------------------------------------------------------------------------------------"
-
-#######################################
-# Q6 - Processus les plus gourmands CPU/Mémoire
-#######################################
-puts "6. Affiche les processus les plus consommateurs de CPU et de mémoire \n \n"
-
-puts `ps -eo pid,user,comm,%cpu,%mem --sort=-%cpu | awk '$6 > 0.0 && $7 > 2.0'`
-q6 = run("ps -eo pid,user,comm,%cpu,%mem --sort=-%cpu | awk '$6 > 0.0 && $7 > 2.0'")
-puts "---------------------------------------------------------------------------------------------------"
-
-#######################################
-# Q7 - (Désactivé) Processus réseau via nethogs
-#######################################
-puts "7. Processus les plus gourmands en trafic réseau \n \n"
-
-require 'open3' 
-
-# tableau sans interpolation 
-cmd = %w[nethogs -t -C -d 1 -c 10]   
-# supprimer 'sudo' et capture la stdout et nethogs
-# '*' est l'opérateur de décomposition, qui permet d'écrire la commande en un tableau entier
-stdout, stderr, status = Open3.capture3(*cmd) 
-puts stdout + stderr
-
-q7 = []
-
-stdout.each_line do |line|
-  # On ignore les lignes qui ne contiennent pas de données chiffrées
-  next unless line.match?(/\d+\.\d+/)
-
-  parts = line.split
-
-  # Selon les versions, l’ordre varie un peu, donc on fait au mieux :
-  iface = parts[0]
-  proto = parts[1]
-  user_or_proc = parts[2]
-  process = parts[3]
-  sent = parts[-2].to_f
-  recv = parts[-1].to_f
-
-  q7 << {
-    interface: iface,
-    utilisateur: proto,
-    processus: user_or_proc,
-    upload_kbps: sent,
-    download_kbps: recv
-  }
-end
-
-
-# Si aucune donnée n’a été collectée (ex : nethogs non installé ou pas d’activité)
-if q7.empty?
-  q7 << { message: "Aucune donnée collectée (nethogs peut nécessiter les droits root ou être indisponible)" }
-end
-puts "---------------------------------------------------------------------------------------------------"
-
-#######################################
-# Q8 - Vérifie présence et status de services clés
-#######################################
-puts "8. Affiche la présence et le status de certains services clés \n \n" 
-
-
-
-
-process_names = %w[
-  sshd cron crond dockerd NetworkManager systemd-networkd
-  rsyslogd systemd-journald firewalld ufw
-  nginx apache2 httpd mariadbd mariadb mysqld postgres
-]
-
-services = {}
-process_names.each do |name|
-  # pgrep cherche un processus par son nom | >/dev/null redirige stdout stderr vers void 
-  up = system("pgrep -x #{name} >/dev/null 2>&1") 
-  # 18 emplacements par rapport au nombre de services
-  printf("%-18s %s\n", name, up ? "up" : "down")
-  services[name] = up ? "up" : "down"
-end
-q8 = services
-
-#######################################
-# Sauvegarde JSON propre pour json_exporter
-#######################################
-$stdout = original_stdout
-ENV['TZ'] = 'Europe/Paris'
-
+# ---------- Métriques host ----------
 def read_load
-  l1,l5,l15 = File.read('/proc/loadavg').split[0,3].map!(&:to_f)
+  l1,l5,l15 = File.read("#{HOST}/proc/loadavg").split[0,3].map!(&:to_f)
   { load1: l1, load5: l5, load15: l15 }
 end
 
 def read_mem
   info = {}
-  File.readlines('/proc/meminfo').each do |l|
-    k,v = l.split(':',2)
-    info[k] = v.to_s.strip.split.first.to_i * 1024
+  File.readlines("#{HOST}/proc/meminfo").each do |l|
+    k,v = l.split(':',2); info[k] = v.to_s.strip.split.first.to_i * 1024
   end
   total = info['MemTotal']||0
   avail = info['MemAvailable']||(info['MemFree']||0)
@@ -241,26 +85,74 @@ def read_mem
 end
 
 def read_disks
-  out = `df -B1 -x tmpfs -x devtmpfs --output=target,size,used 2>/dev/null`.lines
-  out.shift
-  out.map { |ln| mnt,size,used = ln.strip.split(/\s+/,3);
-            { mount: mnt.gsub(/["\\]/,''), total_bytes: size.to_i, used_bytes: used.to_i } }
+  # 1) Try to get the host's mounts list
+  mounts_txt = nil
+
+  # Prefer host's /proc/1/mounts (may be blocked by hidepid/userns)
+  begin
+    mounts_txt = File.read("/host/proc/1/mounts")
+  rescue
+    mounts_txt = nil
+  end
+
+  # Fallback: read via chroot (stays in our ns but reads host /proc contents)
+  if mounts_txt.nil? || mounts_txt.strip.empty?
+    mounts_txt = `chroot /host /bin/sh -c 'cat /proc/1/mounts 2>/dev/null'`
+  end
+
+  return [] if mounts_txt.nil? || mounts_txt.strip.empty?
+
+  # 2) Parse & filter mounts (skip tmpfs/devtmpfs/overlay/squashfs etc.)
+  skip_fs = %w[tmpfs devtmpfs overlay squashfs]
+  mps = mounts_txt.lines.map do |ln|
+    parts = ln.split(" ")
+    next nil unless parts.size >= 3
+    mp  = parts[1]
+    fst = parts[2]
+    next nil if skip_fs.include?(fst)
+    mp
+  end.compact.uniq
+
+  # 3) For each mountpoint, run df against the *host* path (/host + mp)
+  result = []
+  mps.each do |mp|
+    host_path = "/host#{mp}"
+    # Use df in bytes, parse one line of output
+    out = `df -B1 --output=target,size,used "#{host_path}" 2>/dev/null`.lines rescue []
+    next if out.nil? || out.size < 2
+    tgt, size, used = out[1].strip.split(/\s+/, 3)
+    next unless tgt && size && used
+    result << {
+      mount: mp.gsub(/["\\]/, ''),
+      total_bytes: size.to_i,
+      used_bytes:  used.to_i
+    }
+  end
+
+  result
 end
 
-def read_services(names); names.map{ |n| {name: n, up: system("pgrep -x #{n} >/dev/null 2>&1") ? 1 : 0} }; end
 
-  horodatage = Time.now.strftime("%Y-%m-%d_%H:%M:%S")
 
-  resultat = {
-    metrics: {
-              meta: { hostname: `hostname`.strip, os: (`. /etc/os-release; echo $PRETTY_NAME`.strip rescue `uname -s`.strip),
-                      kernel: `uname -r`.strip, ts: horodatage },
-              load: read_load,
-              mem:  read_mem,
-              disk: read_disks,
-              services: read_services(process_names) # process_names défini plus haut dans ton script
-             }
-  }
+# ---------- Construction JSON ----------
+$stdout = original_stdout
+ENV['TZ'] = 'Europe/Paris'
+ts = Time.now.strftime("%Y-%m-%d_%H:%M:%S")
 
-  File.write("/app/audit.json", JSON.pretty_generate(resultat))
-  puts "JSON écrit: /app/audit.json"
+result = {
+  metrics: {
+            meta: {
+                   hostname: run("hostname"),
+                   os: (run(". /etc/os-release 2>/dev/null; echo $PRETTY_NAME").empty? ? run("uname -s") : run(". /etc/os-release; echo $PRETTY_NAME")),
+                   kernel: run("uname -r"),
+                   ts: ts
+                  },
+            load:     read_load,
+            mem:      read_mem,
+            disk:     read_disks,
+            services: read_services_map(SERVICE_CANDIDATES)
+           }
+}
+
+File.write("/app/audit.json", JSON.pretty_generate(result))
+puts "JSON écrit: /app/audit.json"
