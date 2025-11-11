@@ -5,7 +5,7 @@ global:
 scrape_configs:
   # 1) Scrute les agents via json_exporter /probe (multi-target pattern)
   - job_name: 'json_agents'
-    scrape_interval: 5s
+    scrape_interval: 10s
     metrics_path: /probe
     params:
       module: [agent]

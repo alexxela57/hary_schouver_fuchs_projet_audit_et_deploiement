@@ -14,7 +14,7 @@ services:
     volumes:
       - "/:/host:ro,rslave"
     environment:
-      INTERVAL: "2"
+      INTERVAL: "10"
     command: >
       sh -c "ruby /app/script_final.rb;
              busybox httpd -f -p 9101 -h /app &
@@ -37,7 +37,7 @@ services:
     volumes:
       - "/:/host:ro,rslave"
     environment:
-      INTERVAL: "2"
+      INTERVAL: "10"
     command: >
       sh -c "ruby /app/script_final.rb;
              busybox httpd -f -p 9102 -h /app &
@@ -80,7 +80,6 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports: ["3000:3000"]
     depends_on: [prometheus]
     networks: [monitoring]

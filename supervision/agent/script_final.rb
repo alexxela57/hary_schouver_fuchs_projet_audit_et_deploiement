@@ -5,6 +5,39 @@ require 'json'
 require 'stringio'
 require 'set'
 
+#----------- Formatage partitions ---------
+SKIP_FS = %w[
+  tmpfs
+  devtmpfs
+  overlay
+  squashfs
+  proc
+  sysfs
+  cgroup
+  cgroup2
+  mqueue
+  hugetlbfs
+  devpts
+  bpf
+  pstore
+  tracefs
+  securityfs
+  debugfs
+  configfs
+  nsfs
+  efivarfs
+  fusectl
+].freeze
+
+SKIP_MOUNT_PREFIXES = %w[
+  /proc
+  /sys
+  /run/docker/netns
+  /dev/pts
+  /dev/mqueue
+  /dev/hugepages
+].freeze
+
 # ---------- Utils ----------
 def run(cmd)
   `#{cmd}`.strip
@@ -112,53 +145,94 @@ def read_mem
     swap_total_bytes: swap_t, swap_used_bytes: [swap_t-swap_f,0].max }
 end
 
+def read_cpu_times
+  data = safe_read("#{HOST}/proc/stat")
+  return nil unless data
+
+  line = data.lines.find { |l| l.start_with?("cpu ") }
+  return nil unless line
+
+  fields = line.split
+  # fields: cpu user nice system idle iowait irq softirq steal guest guest_nice
+  user    = fields[1].to_i
+  nice    = fields[2].to_i
+  system  = fields[3].to_i
+  idle    = fields[4].to_i
+  iowait  = fields[5].to_i rescue 0
+  irq     = fields[6].to_i rescue 0
+  softirq = fields[7].to_i rescue 0
+  steal   = fields[8].to_i rescue 0
+
+  idle_all  = idle + iowait
+  non_idle  = user + nice + system + irq + softirq + steal
+  total     = idle_all + non_idle
+
+  { idle: idle_all, total: total }
+end
+
+def read_cpu_usage_percent(interval = 0.5)
+  t1 = read_cpu_times
+  return nil unless t1
+
+  sleep interval
+
+  t2 = read_cpu_times
+  return nil unless t2
+
+  idle_delta  = t2[:idle]  - t1[:idle]
+  total_delta = t2[:total] - t1[:total]
+
+  return nil if total_delta <= 0
+
+  usage = 1.0 - idle_delta.to_f / total_delta.to_f
+  (usage * 100.0).round(2)   # pourcentage sur 0–100 avec 2 décimales
+end
+
+def read_cpu
+  usage = read_cpu_usage_percent(0.5)
+  usage ||= 0.0
+  { usage_percent: usage }
+end
+
+
+
 def read_disks
-  # 1) Try to get the host's mounts list
-  mounts_txt = nil
-
-  # Prefer host's /proc/1/mounts (may be blocked by hidepid/userns)
-  begin
-    mounts_txt = File.read("/host/proc/1/mounts")
-  rescue
-    mounts_txt = nil
+  mounts_content = safe_read("#{HOST}/proc/1/mounts")
+  unless mounts_content
+    mounts_content = run("chroot #{HOST} cat /proc/1/mounts")
   end
+  return [] unless mounts_content
 
-  # Fallback: read via chroot (stays in our ns but reads host /proc contents)
-  if mounts_txt.nil? || mounts_txt.strip.empty?
-    mounts_txt = `chroot /host /bin/sh -c 'cat /proc/1/mounts 2>/dev/null'`
-  end
+  disks = []
 
-  return [] if mounts_txt.nil? || mounts_txt.strip.empty?
+  mounts_content.each_line do |line|
+    dev, mountpoint, fstype, *_ = line.split
 
-  # 2) Parse & filter mounts (skip tmpfs/devtmpfs/overlay/squashfs etc.)
-  skip_fs = %w[tmpfs devtmpfs overlay squashfs]
-  mps = mounts_txt.lines.map do |ln|
-    parts = ln.split(" ")
-    next nil unless parts.size >= 3
-    mp  = parts[1]
-    fst = parts[2]
-    next nil if skip_fs.include?(fst)
-    mp
-  end.compact.uniq
+    # 1) filtrage par type de FS
+    next if SKIP_FS.include?(fstype)
 
-  # 3) For each mountpoint, run df against the *host* path (/host + mp)
-  result = []
-  mps.each do |mp|
-    host_path = "/host#{mp}"
-    # Use df in bytes, parse one line of output
-    out = `df -B1 --output=target,size,used "#{host_path}" 2>/dev/null`.lines rescue []
-    next if out.nil? || out.size < 2
-    tgt, size, used = out[1].strip.split(/\s+/, 3)
-    next unless tgt && size && used
-    result << {
-      mount: mp.gsub(/["\\]/, ''),
-      total_bytes: size.to_i,
-      used_bytes:  used.to_i
+    # 2) filtrage par chemin (pseudo FS, namespaces, etc.)
+    next if SKIP_MOUNT_PREFIXES.any? { |p| mountpoint.start_with?(p) }
+
+    host_mount = "#{HOST}#{mountpoint}"
+    next unless File.directory?(host_mount)
+
+    df_output = run("df -B1 --output=target,size,used \"#{host_mount}\" | tail -n +2")
+    next unless df_output
+
+    _, size_str, used_str = df_output.split
+
+    disks << {
+      mount:       mountpoint,
+      device:      dev,
+      total_bytes: size_str.to_i,
+      used_bytes:  used_str.to_i
     }
   end
 
-  result
+  disks
 end
+
 
 
 
@@ -169,12 +243,14 @@ ts = Time.now.strftime("%Y-%m-%d_%H:%M:%S")
 result = {
   metrics: {
             meta:     meta,
+            cpu:      read_cpu,                       # <-- ajout
             load:     read_load,
             mem:      read_mem,
             disk:     read_disks,
             services: read_services_map(SERVICE_CANDIDATES)
-           }
-}
+            }
+  }
+
 
 
 File.write("/app/audit.json", JSON.pretty_generate(result))

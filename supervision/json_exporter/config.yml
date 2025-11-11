@@ -3,6 +3,7 @@ modules:
     http_client_config:
       follow_redirects: false
       enable_http2: false
+
     metrics:
       - name: agent_info
         help: Agent info
@@ -15,19 +16,29 @@ modules:
         values:
           info: '1'
 
-      - name: load
-        path: '{.metrics.load}'
-        help: 'Load average over 1, 5, 15 minutes'
+      - name: cpu
+        help: CPU usage percent over a short interval
+        type: object
+        path: '{.metrics.cpu}'
         labels: {}
         values:
-          load1: '{.load1}'
-          load5: '{.load5}'
+          usage_percent: '{.usage_percent}'
+
+      - name: load
+        help: Load average over 1, 5, 15 minutes
+        type: object
+        path: '{.metrics.load}'
+        labels: {}
+        values:
+          load1:  '{.load1}'
+          load5:  '{.load5}'
           load15: '{.load15}'
 
       - name: mem
-        help: Memory bytes
+        help: Memory usage in bytes
         type: object
         path: '{.metrics.mem}'
+        labels: {}
         values:
           total_bytes:       '{.total_bytes}'
           used_bytes:        '{.used_bytes}'
@@ -35,11 +46,12 @@ modules:
           swap_used_bytes:   '{.swap_used_bytes}'
 
       - name: disk
-        help: Disk bytes per mountpoint
+        help: Disk usage per mountpoint
         type: object
         path: '{.metrics.disk[*]}'
         labels:
           mountpoint: '{.mount}'
+          device:     '{.device}'
         values:
           total_bytes: '{.total_bytes}'
           used_bytes:  '{.used_bytes}'
