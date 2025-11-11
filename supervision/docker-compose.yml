@@ -14,7 +14,7 @@ services:
     volumes:
       - "/:/host:ro,rslave"
     environment:
-      INTERVAL: "10"
+      INTERVAL: "2"
     command: >
       sh -c "ruby /app/script_final.rb;
              busybox httpd -f -p 9101 -h /app &
@@ -37,7 +37,7 @@ services:
     volumes:
       - "/:/host:ro,rslave"
     environment:
-      INTERVAL: "10"
+      INTERVAL: "2"
     command: >
       sh -c "ruby /app/script_final.rb;
              busybox httpd -f -p 9102 -h /app &

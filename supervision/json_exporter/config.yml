@@ -15,13 +15,13 @@ modules:
         values:
           info: '1'
 
-      - name: cpu
-        help: Load average
-        type: object
+      - name: load
         path: '{.metrics.load}'
+        help: 'Load average over 1, 5, 15 minutes'
+        labels: {}
         values:
-          load1:  '{.load1}'
-          load5:  '{.load5}'
+          load1: '{.load1}'
+          load5: '{.load5}'
           load15: '{.load15}'
 
       - name: mem

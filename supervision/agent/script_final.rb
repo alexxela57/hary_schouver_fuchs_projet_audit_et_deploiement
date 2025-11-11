@@ -12,16 +12,44 @@ rescue
   ""
 end
 
-HOST = "/host" # racine du host bind-mountée dans le conteneur
+HOST = "/host"
 
-# ---------- Q1..Q7 : (facultatif pour affichage console) ----------
-buffer = StringIO.new
-original_stdout = $stdout
-$stdout = buffer
+def safe_read(path)
+  File.read(path)
+rescue
+  nil
+end
 
-puts "Audit host via namespaces & bind-mount\n"
+def meta
+  # hostname du host
+  hostname = safe_read("#{HOST}/etc/hostname")&.strip
+  if hostname.nil? || hostname.empty?
+    hostname = run("chroot #{HOST} hostname")
+  end
+  hostname = "unknown" if hostname.nil? || hostname.empty?
 
-# ---------- Services (détection robuste) ----------
+  # OS du host
+  os_release = safe_read("#{HOST}/etc/os-release")
+  os_name = if os_release
+  os_release[/^PRETTY_NAME="([^"]+)"/, 1] ||
+              os_release[/^NAME="([^"]+)"/, 1]
+end
+os_name ||= "unknown"
+
+# noyau du host
+kernel = run("chroot #{HOST} uname -r")
+kernel = "unknown" if kernel.nil? || kernel.empty?
+
+{
+  hostname: hostname,
+  os:       os_name,
+  kernel:   kernel,
+  ts:       Time.now.strftime("%Y-%m-%d_%H:%M:%S")
+}
+end
+
+
+# ---------- Services -------------
 
 SERVICE_CANDIDATES = {
   "sshd"               => %w[sshd],
@@ -56,7 +84,7 @@ def read_services_map(candidates)
     up = names.any? do |n|
       comms.include?(n) || cmdls.any? { |c| c =~ /(^|\/)#{Regexp.escape(n)}(\s|$)/ }
     end
-    # journald fallback if hidden but socket exists
+
     if !up && label == "systemd-journald" && File.socket?("/host/run/systemd/journal/socket")
       up = true
     end
@@ -135,24 +163,19 @@ end
 
 
 # ---------- Construction JSON ----------
-$stdout = original_stdout
 ENV['TZ'] = 'Europe/Paris'
 ts = Time.now.strftime("%Y-%m-%d_%H:%M:%S")
 
 result = {
   metrics: {
-            meta: {
-                   hostname: run("hostname"),
-                   os: (run(". /etc/os-release 2>/dev/null; echo $PRETTY_NAME").empty? ? run("uname -s") : run(". /etc/os-release; echo $PRETTY_NAME")),
-                   kernel: run("uname -r"),
-                   ts: ts
-                  },
+            meta:     meta,
             load:     read_load,
             mem:      read_mem,
             disk:     read_disks,
             services: read_services_map(SERVICE_CANDIDATES)
            }
 }
+
 
 File.write("/app/audit.json", JSON.pretty_generate(result))
 puts "JSON écrit: /app/audit.json"
