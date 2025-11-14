@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 0,
+  "id": 1,
   "links": [],
   "panels": [
     {
@@ -588,7 +588,7 @@
         {
           "editorMode": "builder",
           "expr": "service_up{instance=\"http://agent_a:9101/audit.json\"}",
-          "legendFormat": "__auto",
+          "legendFormat": "{{service}}",
           "range": true,
           "refId": "A"
         }
@@ -663,7 +663,7 @@
         {
           "editorMode": "builder",
           "expr": "service_up{instance=\"http://agent_b:9102/audit.json\"}",
-          "legendFormat": "__auto",
+          "legendFormat": "{{service}}",
           "range": true,
           "refId": "A"
         }
@@ -686,5 +686,5 @@
   "timezone": "browser",
   "title": "Audit machine",
   "uid": "adjjz8t",
-  "version": 16
+  "version": 18
 }
