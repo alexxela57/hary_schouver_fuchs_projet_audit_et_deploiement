@@ -561,7 +561,8 @@ Captures d'écran :
 
 <img width="2143" height="1167" alt="Screenshot_20251114_091126" src="https://github.com/user-attachments/assets/3cbcd968-edc5-4f29-8315-47d0ef004aa6" />
 
-<img width="2156" height="383" alt="Screenshot_20251114_091150" src="https://github.com/user-attachments/assets/fb47ca2d-e3dc-4f85-9028-e287f257a992" />
+<img width="1593" height="258" alt="Screenshot from 2025-11-14 10-34-12" src="https://github.com/user-attachments/assets/4699bb3f-4fe7-420a-bf85-969d2de8ab82" />
+
 
 
 
