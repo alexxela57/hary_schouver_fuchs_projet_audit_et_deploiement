@@ -250,8 +250,6 @@ Slim** pour exécuter un script Ruby sur la machine hôte du client.
 
 ## Sommaire
 
-## Sommaire
-
 - [1. Objectif du projet](#1-objectif-du-projet)
 - [2. Vue d’ensemble de larchitecture](#2-vue-densemble-de-larchitecture)
 - [3. Description des composants du dépôt](#3-description-des-composants-du-dépôt)
