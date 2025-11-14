@@ -15,13 +15,13 @@ services:
       - "/:/host:ro,rslave" # Monte la racine du host en lecture seule dans /host
     environment:
       INTERVAL: "10"        # Intervalle (en secondes) entre deux audits
+      # 1) Lance une première fois le script d'audit
+      # 2) Démarre un petit serveur HTTP BusyBox sur le port 9101 (sert audit.json)
+      # 3) Boucle infinie : relance régulièrement le script Ruby toutes les INTERVAL secondes
     command: >
       sh -c "ruby /app/script_final.rb;
              busybox httpd -f -p 9101 -h /app &
              while true; do ruby /app/script_final.rb; sleep ${INTERVAL:-10}; done"
-      # 1) Lance une première fois le script d'audit
-      # 2) Démarre un petit serveur HTTP BusyBox sur le port 9101 (sert audit.json)
-      # 3) Boucle infinie : relance régulièrement le script Ruby toutes les INTERVAL secondes
     healthcheck:
       test: ["CMD-SHELL", "busybox wget -qO- http://localhost:9101/audit.json >/dev/null 2>&1 || exit 1"]
       # Vérifie que le fichier JSON est bien servi par le serveur HTTP de l’agent
@@ -42,11 +42,10 @@ services:
       - "/:/host:ro,rslave"
     environment:
       INTERVAL: "10"
-    command: >
+    command: >  # Même principe que agent_a, mais écoute sur le port 9102
       sh -c "ruby /app/script_final.rb;
              busybox httpd -f -p 9102 -h /app &
              while true; do ruby /app/script_final.rb; sleep ${INTERVAL:-10}; done"
-      # Même principe que agent_a, mais écoute sur le port 9102
     healthcheck:
       test: ["CMD-SHELL", "busybox wget -qO- http://localhost:9102/audit.json >/dev/null 2>&1 || exit 1"]
       interval: 10s
