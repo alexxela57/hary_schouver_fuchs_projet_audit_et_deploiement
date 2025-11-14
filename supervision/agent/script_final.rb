@@ -27,6 +27,7 @@ SKIP_FS = %w[
   nsfs
   efivarfs
   fusectl
+  ramfs
 ].freeze
 
 # Points de montage à ignorer (proc, sys, namespaces Docker, etc.)
