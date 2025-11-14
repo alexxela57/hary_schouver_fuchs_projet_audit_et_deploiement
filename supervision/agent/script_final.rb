@@ -264,5 +264,5 @@ result = {
 
 # Écrit le JSON formaté dans /app/audit.json (lu ensuite par json_exporter)
 File.write("/app/audit.json", JSON.pretty_generate(result))
-puts "JSON écrit:
-::contentReference[oaicite:0]{index=0}
+puts "JSON écrit: /app/audit.json"
+
