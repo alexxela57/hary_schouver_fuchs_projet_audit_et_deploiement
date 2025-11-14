@@ -243,7 +243,7 @@ Slim** pour exécuter un script Ruby sur la machine hôte du client.
     Définit le script Ruby comme commande principale du conteneur.
 
 
-######################################################################################################### SUITE #################################################################################################################
+######################################################## SUITE #######################################################
 
 
 # Supervision centralisée d’une machine Linux avec Prometheus et Grafana
