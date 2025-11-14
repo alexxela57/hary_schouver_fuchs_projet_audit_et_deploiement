@@ -243,7 +243,7 @@ Slim** pour exécuter un script Ruby sur la machine hôte du client.
     Définit le script Ruby comme commande principale du conteneur.
 
 
-######################################################## SUITE #######################################################
+############################ SUITE ############################ 
 
 
 # Supervision centralisée d’une machine Linux avec Prometheus et Grafana
@@ -559,4 +559,13 @@ Pour auditer deux machines distinctes, une approche plus pertinente serait :
 
 ---
 
-Ce rapport résume le fonctionnement et la logique de chaque composant du projet, ainsi que le rôle de chaque fonction du script Ruby, tout en proposant des pistes concrètes pour faire évoluer cette architecture vers une supervision multi-machines plus pertinente.
+Captures d'écran :
+
+<img width="2143" height="1167" alt="Screenshot_20251114_091126" src="https://github.com/user-attachments/assets/3cbcd968-edc5-4f29-8315-47d0ef004aa6" />
+
+<img width="2156" height="383" alt="Screenshot_20251114_091150" src="https://github.com/user-attachments/assets/fb47ca2d-e3dc-4f85-9028-e287f257a992" />
+
+
+
+
+
