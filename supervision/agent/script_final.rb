@@ -1,11 +1,11 @@
 #!/usr/bin/env ruby
 # encoding: UTF-8
 
-require 'json'
-require 'stringio'
-require 'set'
+require 'json' # JSON.pretty_generate
+require 'set' # comms = Set.new
 
 #----------- Formatage partitions ---------
+# Types de systèmes de fichiers à ignorer (pseudo-FS, tmpfs, etc.)
 SKIP_FS = %w[
   tmpfs
   devtmpfs
@@ -29,6 +29,7 @@ SKIP_FS = %w[
   fusectl
 ].freeze
 
+# Points de montage à ignorer (proc, sys, namespaces Docker, etc.)
 SKIP_MOUNT_PREFIXES = %w[
   /proc
   /sys
@@ -40,15 +41,15 @@ SKIP_MOUNT_PREFIXES = %w[
 
 # ---------- Utils ----------
 def run(cmd)
-  `#{cmd}`.strip
+  `#{cmd}`.strip              # Exécute une commande shell et enlève les retours à la ligne
 rescue
   ""
 end
 
-HOST = "/host"
+HOST = "/host"                # Préfixe vers le système de fichiers du host monté dans le conteneur
 
 def safe_read(path)
-  File.read(path)
+  File.read(path)             # Lecture de fichier avec gestion d’erreur
 rescue
   nil
 end
@@ -57,19 +58,19 @@ def meta
   # hostname du host
   hostname = safe_read("#{HOST}/etc/hostname")&.strip
   if hostname.nil? || hostname.empty?
-    hostname = run("chroot #{HOST} hostname")
+    hostname = run("chroot #{HOST} hostname")   # Fallback via chroot si /etc/hostname indisponible
   end
   hostname = "unknown" if hostname.nil? || hostname.empty?
 
-  # OS du host
+  # OS du host (PRETTY_NAME ou NAME dans /etc/os-release)
   os_release = safe_read("#{HOST}/etc/os-release")
   os_name = if os_release
   os_release[/^PRETTY_NAME="([^"]+)"/, 1] ||
-              os_release[/^NAME="([^"]+)"/, 1]
+               os_release[/^NAME="([^"]+)"/, 1]
 end
 os_name ||= "unknown"
 
-# noyau du host
+# Noyau du host
 kernel = run("chroot #{HOST} uname -r")
 kernel = "unknown" if kernel.nil? || kernel.empty?
 
@@ -77,13 +78,14 @@ kernel = "unknown" if kernel.nil? || kernel.empty?
   hostname: hostname,
   os:       os_name,
   kernel:   kernel,
-  ts:       Time.now.strftime("%Y-%m-%d_%H:%M:%S")
+  ts:       Time.now.strftime("%Y-%m-%d_%H:%M:%S") # Timestamp de génération
 }
 end
 
 
 # ---------- Services -------------
 
+# Liste des services "critiques" à surveiller et des noms possibles associés
 SERVICE_CANDIDATES = {
   "sshd"               => %w[sshd],
   "cron"               => %w[crond cron],
@@ -101,6 +103,7 @@ SERVICE_CANDIDATES = {
 }
 
 def host_process_index
+  # Récupère la liste des noms de commandes (comm) et lignes cmdline de tous les processus du host
   comms = Set.new
   cmdls = []
   Dir.glob("/host/proc/[0-9]*/comm").each  { |f| comms << File.read(f, mode: 'rb').to_s.strip rescue nil }
@@ -114,10 +117,12 @@ end
 def read_services_map(candidates)
   comms, cmdls = host_process_index
   candidates.map do |label, names|
+    # up = 1 si au moins un des noms associés au service est trouvé dans comm ou cmdline
     up = names.any? do |n|
       comms.include?(n) || cmdls.any? { |c| c =~ /(^|\/)#{Regexp.escape(n)}(\s|$)/ }
     end
 
+    # Cas particulier : journald peut être considéré "up" si son socket existe
     if !up && label == "systemd-journald" && File.socket?("/host/run/systemd/journal/socket")
       up = true
     end
@@ -128,11 +133,13 @@ end
 
 # ---------- Métriques host ----------
 def read_load
+  # Lit les 3 valeurs de load average dans /proc/loadavg
   l1,l5,l15 = File.read("#{HOST}/proc/loadavg").split[0,3].map!(&:to_f)
   { load1: l1, load5: l5, load15: l15 }
 end
 
 def read_mem
+  # Parse /proc/meminfo en bytes
   info = {}
   File.readlines("#{HOST}/proc/meminfo").each do |l|
     k,v = l.split(':',2); info[k] = v.to_s.strip.split.first.to_i * 1024
@@ -141,11 +148,17 @@ def read_mem
   avail = info['MemAvailable']||(info['MemFree']||0)
   swap_t = info['SwapTotal']||0
   swap_f = info['SwapFree'] ||0
-  { total_bytes: total, used_bytes: [total-avail,0].max,
-    swap_total_bytes: swap_t, swap_used_bytes: [swap_t-swap_f,0].max }
+
+  {
+    total_bytes:       total,
+    used_bytes:        [total-avail,0].max,
+    swap_total_bytes:  swap_t,
+    swap_used_bytes:   [swap_t-swap_f,0].max
+  }
 end
 
 def read_cpu_times
+  # Lit la ligne "cpu" de /proc/stat (temps cumulés depuis le boot)
   data = safe_read("#{HOST}/proc/stat")
   return nil unless data
 
@@ -171,6 +184,7 @@ def read_cpu_times
 end
 
 def read_cpu_usage_percent(interval = 0.5)
+  # Mesure l’utilisation CPU sur un petit intervalle (par défaut 0,5s)
   t1 = read_cpu_times
   return nil unless t1
 
@@ -185,18 +199,17 @@ def read_cpu_usage_percent(interval = 0.5)
   return nil if total_delta <= 0
 
   usage = 1.0 - idle_delta.to_f / total_delta.to_f
-  (usage * 100.0).round(2)   # pourcentage sur 0–100 avec 2 décimales
+  (usage * 100.0).round(2)   # Pourcentage 0–100 avec 2 décimales
 end
 
 def read_cpu
   usage = read_cpu_usage_percent(0.5)
-  usage ||= 0.0
+  usage ||= 0.0              # Fallback à 0 si la mesure échoue
   { usage_percent: usage }
 end
 
-
-
 def read_disks
+  # Récupère la liste des montages du PID 1 (système principal) dans /proc/1/mounts
   mounts_content = safe_read("#{HOST}/proc/1/mounts")
   unless mounts_content
     mounts_content = run("chroot #{HOST} cat /proc/1/mounts")
@@ -217,6 +230,7 @@ def read_disks
     host_mount = "#{HOST}#{mountpoint}"
     next unless File.directory?(host_mount)
 
+    # Utilise df -B1 pour obtenir taille et utilisé en bytes
     df_output = run("df -B1 --output=target,size,used \"#{host_mount}\" | tail -n +2")
     next unless df_output
 
@@ -233,25 +247,22 @@ def read_disks
   disks
 end
 
-
-
-
 # ---------- Construction JSON ----------
-ENV['TZ'] = 'Europe/Paris'
-ts = Time.now.strftime("%Y-%m-%d_%H:%M:%S")
+ENV['TZ'] = 'Europe/Paris'                        # Force le fuseau horaire
+ts = Time.now.strftime("%Y-%m-%d_%H:%M:%S")       # Timestamp (non utilisé directement dans result)
 
 result = {
   metrics: {
-            meta:     meta,
-            cpu:      read_cpu,                       # <-- ajout
-            load:     read_load,
-            mem:      read_mem,
-            disk:     read_disks,
-            services: read_services_map(SERVICE_CANDIDATES)
+            meta:     meta,                               # Infos générales sur le host
+            cpu:      read_cpu,                           # Utilisation CPU %
+            load:     read_load,                          # Load average
+            mem:      read_mem,                           # Mémoire et swap
+            disk:     read_disks,                         # Partitions filtrées
+            services: read_services_map(SERVICE_CANDIDATES) # État des services critiques
             }
   }
 
-
-
+# Écrit le JSON formaté dans /app/audit.json (lu ensuite par json_exporter)
 File.write("/app/audit.json", JSON.pretty_generate(result))
-puts "JSON écrit: /app/audit.json"
+puts "JSON écrit:
+::contentReference[oaicite:0]{index=0}
